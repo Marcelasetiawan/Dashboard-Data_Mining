@@ -1,0 +1,1423 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Agri Yield Prediction — Dashboard Analisis</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d1117;
+    --bg2: #161b22;
+    --bg3: #21262d;
+    --border: #30363d;
+    --green: #3fb950;
+    --green2: #238636;
+    --blue: #58a6ff;
+    --orange: #f78166;
+    --yellow: #e3b341;
+    --purple: #bc8cff;
+    --text: #e6edf3;
+    --text2: #8b949e;
+    --text3: #6e7681;
+    --accent: #1f6feb;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    min-height: 100vh;
+    overflow-x: hidden;
+  }
+
+  /* Subtle grid background */
+  body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background-image: 
+      linear-gradient(rgba(31,111,235,0.04) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(31,111,235,0.04) 1px, transparent 1px);
+    background-size: 32px 32px;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .wrapper { position: relative; z-index: 1; max-width: 1280px; margin: 0 auto; padding: 32px 24px; }
+
+  /* HEADER */
+  header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 40px;
+    flex-wrap: wrap;
+    gap: 16px;
+  }
+
+  .header-left { display: flex; flex-direction: column; gap: 6px; }
+
+  .eyebrow {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 3px;
+    text-transform: uppercase;
+    color: var(--green);
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .eyebrow::before {
+    content: '';
+    display: inline-block;
+    width: 20px;
+    height: 2px;
+    background: var(--green);
+  }
+
+  h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 28px;
+    font-weight: 700;
+    letter-spacing: -0.5px;
+    line-height: 1.2;
+    color: var(--text);
+  }
+  h1 span { color: var(--green); }
+
+  .subtitle {
+    font-size: 14px;
+    color: var(--text2);
+    max-width: 500px;
+    line-height: 1.6;
+  }
+
+  .badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 12px;
+    border-radius: 6px;
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    border: 1px solid;
+  }
+  .badge-green { background: rgba(63,185,80,0.1); border-color: var(--green); color: var(--green); }
+  .badge-blue { background: rgba(88,166,255,0.1); border-color: var(--blue); color: var(--blue); }
+
+  /* STAT CARDS */
+  .stats-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 16px;
+    margin-bottom: 28px;
+  }
+
+  .stat-card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+    position: relative;
+    overflow: hidden;
+    transition: border-color 0.2s, transform 0.2s;
+    cursor: default;
+  }
+  .stat-card:hover {
+    border-color: var(--blue);
+    transform: translateY(-2px);
+  }
+  .stat-card::after {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+  .stat-card.green::after { background: linear-gradient(90deg, var(--green), transparent); }
+  .stat-card.blue::after { background: linear-gradient(90deg, var(--blue), transparent); }
+  .stat-card.orange::after { background: linear-gradient(90deg, var(--orange), transparent); }
+  .stat-card.yellow::after { background: linear-gradient(90deg, var(--yellow), transparent); }
+  .stat-card.purple::after { background: linear-gradient(90deg, var(--purple), transparent); }
+
+  .stat-label {
+    font-size: 11px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--text3);
+    font-family: 'Space Mono', monospace;
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1;
+    margin-bottom: 4px;
+  }
+  .stat-value.green { color: var(--green); }
+  .stat-value.blue { color: var(--blue); }
+  .stat-value.orange { color: var(--orange); }
+  .stat-value.yellow { color: var(--yellow); }
+  .stat-value.purple { color: var(--purple); }
+
+  .stat-sub {
+    font-size: 12px;
+    color: var(--text2);
+  }
+
+  /* SECTION TITLES */
+  .section-title {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .section-title h2 {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text);
+  }
+  .section-title .line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+  }
+  .section-title .dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    flex-shrink: 0;
+  }
+
+  /* MAIN GRID */
+  .main-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 16px;
+  }
+  .main-grid.three { grid-template-columns: 1fr 1fr 1fr; }
+  .main-grid.full { grid-template-columns: 1fr; }
+  .span2 { grid-column: span 2; }
+
+  @media (max-width: 900px) {
+    .main-grid { grid-template-columns: 1fr; }
+    .main-grid.three { grid-template-columns: 1fr; }
+    .span2 { grid-column: span 1; }
+  }
+
+  /* CARD */
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 24px;
+    position: relative;
+  }
+
+  .card-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text2);
+    margin-bottom: 20px;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .card-title .icon {
+    width: 20px; height: 20px;
+    border-radius: 4px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 11px;
+  }
+  .icon-green { background: rgba(63,185,80,0.15); color: var(--green); }
+  .icon-blue { background: rgba(88,166,255,0.15); color: var(--blue); }
+  .icon-orange { background: rgba(247,129,102,0.15); color: var(--orange); }
+  .icon-yellow { background: rgba(227,179,65,0.15); color: var(--yellow); }
+  .icon-purple { background: rgba(188,140,255,0.15); color: var(--purple); }
+
+  canvas { max-width: 100%; }
+
+  /* MODEL COMPARISON TABLE */
+  .model-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .model-table th {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    color: var(--text3);
+    padding: 8px 12px;
+    text-align: left;
+    border-bottom: 1px solid var(--border);
+  }
+  .model-table td {
+    padding: 14px 12px;
+    font-size: 14px;
+    border-bottom: 1px solid rgba(48,54,61,0.5);
+  }
+  .model-table tr:last-child td { border-bottom: none; }
+  .model-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+  .model-name {
+    font-weight: 600;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .model-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  .metric-pill {
+    display: inline-block;
+    padding: 3px 8px;
+    border-radius: 4px;
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+  }
+  .pill-good { background: rgba(63,185,80,0.15); color: var(--green); }
+  .pill-bad { background: rgba(247,129,102,0.15); color: var(--orange); }
+  .pill-neutral { background: rgba(88,166,255,0.15); color: var(--blue); }
+
+  .best-badge {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 1px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    background: rgba(63,185,80,0.2);
+    color: var(--green);
+    border: 1px solid rgba(63,185,80,0.3);
+  }
+
+  /* FEATURE IMPORTANCE BAR */
+  .feat-list { display: flex; flex-direction: column; gap: 10px; }
+  .feat-item { display: flex; align-items: center; gap: 10px; }
+  .feat-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    color: var(--text2);
+    width: 160px;
+    flex-shrink: 0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+  .feat-bar-bg {
+    flex: 1;
+    height: 8px;
+    background: var(--bg3);
+    border-radius: 4px;
+    overflow: hidden;
+  }
+  .feat-bar-fill {
+    height: 100%;
+    border-radius: 4px;
+    transition: width 1s cubic-bezier(.16,1,.3,1);
+  }
+  .feat-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    width: 40px;
+    text-align: right;
+  }
+
+  /* TAB SELECTOR */
+  .tabs {
+    display: flex;
+    gap: 4px;
+    margin-bottom: 20px;
+    background: var(--bg3);
+    padding: 4px;
+    border-radius: 8px;
+    width: fit-content;
+  }
+  .tab {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    letter-spacing: 1px;
+    padding: 6px 14px;
+    border-radius: 6px;
+    cursor: pointer;
+    transition: all 0.2s;
+    color: var(--text2);
+    border: none;
+    background: none;
+  }
+  .tab.active {
+    background: var(--bg2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .tab:hover:not(.active) { color: var(--text); }
+
+  /* DISTRIBUTION INSIGHT */
+  .insight-row {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    margin-bottom: 16px;
+  }
+  .insight-chip {
+    padding: 5px 12px;
+    border-radius: 20px;
+    font-size: 12px;
+    font-family: 'Space Mono', monospace;
+    border: 1px solid var(--border);
+    color: var(--text2);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+  }
+  .insight-chip span { color: var(--text); font-weight: 600; }
+
+  /* PROGRESS / SCORE RING */
+  .score-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 16px;
+    text-align: center;
+  }
+  .score-item { display: flex; flex-direction: column; align-items: center; gap: 8px; }
+  .score-ring {
+    width: 80px; height: 80px;
+    border-radius: 50%;
+    border: 3px solid var(--bg3);
+    display: flex; align-items: center; justify-content: center;
+    flex-direction: column;
+    position: relative;
+  }
+  .score-ring-val {
+    font-family: 'Space Mono', monospace;
+    font-size: 14px;
+    font-weight: 700;
+  }
+  .score-ring-sub { font-size: 9px; color: var(--text3); font-family: 'Space Mono', monospace; }
+  .score-label { font-size: 11px; color: var(--text2); font-family: 'Space Mono', monospace; }
+
+  /* CORRELATION HEATMAP MINI */
+  .corr-grid {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    gap: 2px;
+  }
+  .corr-cell {
+    aspect-ratio: 1;
+    border-radius: 3px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 8px;
+    font-family: 'Space Mono', monospace;
+    cursor: default;
+    transition: transform 0.15s;
+  }
+  .corr-cell:hover { transform: scale(1.3); z-index: 10; }
+  .corr-label-row, .corr-label-col {
+    font-size: 8px;
+    font-family: 'Space Mono', monospace;
+    color: var(--text3);
+    display: flex; align-items: center; justify-content: center;
+    text-align: center;
+    padding: 2px;
+  }
+
+  /* FOOTER */
+  footer {
+    margin-top: 48px;
+    padding-top: 24px;
+    border-top: 1px solid var(--border);
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 12px;
+  }
+  footer p { font-size: 12px; color: var(--text3); font-family: 'Space Mono', monospace; }
+
+  /* Animations */
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to { opacity: 1; transform: translateY(0); }
+  }
+  .card { animation: fadeUp 0.5s ease both; }
+  .card:nth-child(1) { animation-delay: 0.05s; }
+  .card:nth-child(2) { animation-delay: 0.1s; }
+  .card:nth-child(3) { animation-delay: 0.15s; }
+  .stat-card { animation: fadeUp 0.4s ease both; }
+  .stat-card:nth-child(1) { animation-delay: 0s; }
+  .stat-card:nth-child(2) { animation-delay: 0.06s; }
+  .stat-card:nth-child(3) { animation-delay: 0.12s; }
+  .stat-card:nth-child(4) { animation-delay: 0.18s; }
+  .stat-card:nth-child(5) { animation-delay: 0.24s; }
+</style>
+</head>
+<body>
+<div class="wrapper">
+
+  <!-- HEADER -->
+  <header>
+    <div class="header-left">
+      <div class="eyebrow">Data Mining · Tugas Besar</div>
+      <h1>Agri Yield <span>Prediction</span><br>Dashboard</h1>
+      <p class="subtitle">Analisis prediksi hasil panen pertanian menggunakan Linear Regression, Random Forest, dan Lasso Regression dengan dataset 10.000 sampel, 46 fitur.</p>
+    </div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;align-self:flex-start;margin-top:8px;">
+      <div class="badge badge-green">● 10.000 Sampel</div>
+      <div class="badge badge-blue">● 46 Fitur</div>
+    </div>
+  </header>
+
+  <!-- STAT CARDS -->
+  <div class="section-title">
+    <div class="dot"></div>
+    <h2>Ringkasan Dataset</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="stats-grid">
+    <div class="stat-card green">
+      <div class="stat-label">Total Data</div>
+      <div class="stat-value green">10K</div>
+      <div class="stat-sub">10.000 baris × 46 kolom</div>
+    </div>
+    <div class="stat-card blue">
+      <div class="stat-label">Rata-rata Yield</div>
+      <div class="stat-value blue">5.47</div>
+      <div class="stat-sub">ton/ha (rentang: 1.0 – 10.0)</div>
+    </div>
+    <div class="stat-card orange">
+      <div class="stat-label">Jenis Tanaman</div>
+      <div class="stat-value orange">4</div>
+      <div class="stat-sub">Maize, Wheat, Soybean, Rice</div>
+    </div>
+    <div class="stat-card yellow">
+      <div class="stat-label">Rentang Tahun</div>
+      <div class="stat-value yellow">25</div>
+      <div class="stat-sub">2000 – 2024</div>
+    </div>
+    <div class="stat-card purple">
+      <div class="stat-label">Best Model R²</div>
+      <div class="stat-value purple">-0.006</div>
+      <div class="stat-sub">Lasso Regression (best model)</div>
+    </div>
+  </div>
+
+  <!-- ROW 1: Model Evaluation + Yield Distribution -->
+  <div class="section-title" style="margin-top:32px;">
+    <div class="dot"></div>
+    <h2>Evaluasi Model</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="main-grid" style="margin-bottom:16px;">
+    <!-- Model Comparison Table -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-blue">📊</div>
+        Perbandingan Performa Model
+      </div>
+      <table class="model-table">
+        <thead>
+          <tr>
+            <th>Model</th>
+            <th>MAE</th>
+            <th>RMSE</th>
+            <th>R² Score</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>
+              <div class="model-name">
+                <div class="model-dot" style="background:var(--blue)"></div>
+                Linear Regression
+              </div>
+            </td>
+            <td><span class="metric-pill pill-neutral">2.280</span></td>
+            <td><span class="metric-pill pill-neutral">2.633</span></td>
+            <td><span class="metric-pill pill-bad">-0.008</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="model-name">
+                <div class="model-dot" style="background:var(--orange)"></div>
+                Random Forest
+              </div>
+            </td>
+            <td><span class="metric-pill pill-neutral">2.295</span></td>
+            <td><span class="metric-pill pill-neutral">2.651</span></td>
+            <td><span class="metric-pill pill-bad">-0.022</span></td>
+          </tr>
+          <tr>
+            <td>
+              <div class="model-name">
+                <div class="model-dot" style="background:var(--green)"></div>
+                Lasso Regression
+                <span class="best-badge">BEST</span>
+              </div>
+            </td>
+            <td><span class="metric-pill pill-good">2.278</span></td>
+            <td><span class="metric-pill pill-good">2.630</span></td>
+            <td><span class="metric-pill pill-bad">-0.006</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <div style="margin-top:16px;padding:12px;background:rgba(227,179,65,0.08);border:1px solid rgba(227,179,65,0.2);border-radius:8px;">
+        <p style="font-size:12px;color:var(--yellow);font-family:'Space Mono',monospace;letter-spacing:.5px;">⚠ INTERPRETASI</p>
+        <p style="font-size:12px;color:var(--text2);margin-top:6px;line-height:1.6;">
+          Ketiga model menunjukkan R² negatif, artinya model tidak lebih baik dari prediksi rata-rata. Dataset ini memiliki <strong style="color:var(--text)">distribusi Yield yang sangat acak</strong> (std=2.63), sehingga seleksi fitur lebih lanjut atau model non-linear yang lebih kompleks diperlukan.
+        </p>
+      </div>
+    </div>
+
+    <!-- Bar Chart MAE RMSE -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-orange">📉</div>
+        MAE & RMSE per Model
+      </div>
+      <canvas id="errorChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- CROSS VALIDATION -->
+<div class="section-title" style="margin-top:16px;">
+  <div class="dot"></div>
+  <h2>Cross Validation</h2>
+  <div class="line"></div>
+</div>
+
+<div class="card" style="margin-bottom:16px;">
+  <div class="card-title">
+    <div class="icon icon-blue">📈</div>
+    Hasil 5-Fold Cross Validation
+  </div>
+
+  <table class="model-table">
+    <thead>
+      <tr>
+        <th>Model</th>
+        <th>Mean R²</th>
+        <th>Std Dev</th>
+      </tr>
+    </thead>
+
+    <tbody>
+      <tr>
+        <td>Linear Regression</td>
+        <td>-0.0037</td>
+        <td>0.0017</td>
+      </tr>
+
+      <tr>
+        <td>Random Forest</td>
+        <td>-0.0128</td>
+        <td>0.0072</td>
+      </tr>
+
+      <tr>
+        <td>Lasso Regression</td>
+        <td>-0.0019</td>
+        <td>0.0017</td>
+      </tr>
+    </tbody>
+  </table>
+</div>
+
+  <!-- HYPERPARAMETER TUNING -->
+<div class="section-title" style="margin-top:16px;">
+  <div class="dot"></div>
+  <h2>Hyperparameter Tuning</h2>
+  <div class="line"></div>
+</div>
+
+<div class="main-grid" style="margin-bottom:16px;">
+
+  <!-- BEST PARAMS -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon icon-orange">⚙️</div>
+      Best Parameters
+    </div>
+
+    <table class="model-table">
+      <tbody>
+
+        <tr>
+          <td>n_estimators</td>
+          <td>200</td>
+        </tr>
+
+        <tr>
+          <td>max_depth</td>
+          <td>10</td>
+        </tr>
+
+        <tr>
+          <td>min_samples_split</td>
+          <td>10</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+  <!-- GRIDSEARCH RESULT -->
+  <div class="card">
+    <div class="card-title">
+      <div class="icon icon-green">📊</div>
+      GridSearchCV Result
+    </div>
+
+    <table class="model-table">
+      <tbody>
+
+        <tr>
+          <td>Best CV R²</td>
+          <td>-0.0030</td>
+        </tr>
+
+        <tr>
+          <td>MAE</td>
+          <td>2.283</td>
+        </tr>
+
+        <tr>
+          <td>RMSE</td>
+          <td>2.633</td>
+        </tr>
+
+        <tr>
+          <td>R² Score</td>
+          <td>-0.008</td>
+        </tr>
+
+      </tbody>
+    </table>
+  </div>
+
+</div>
+  <!-- ROW 2: Feature Selection + Yield by Category -->
+  <div class="main-grid" style="margin-bottom:16px;">
+
+    <!-- Feature Importance -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-purple">🔑</div>
+        Top 10 Feature Importance (Random Forest)
+      </div>
+      <div class="feat-list" id="featList"></div>
+    </div>
+
+    <!-- Yield Distribution Chart -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-green">🌾</div>
+        Distribusi Yield per Kategori
+      </div>
+      <div class="tabs" id="catTabs">
+        <button class="tab active" onclick="switchCat('crop')">Crop</button>
+        <button class="tab" onclick="switchCat('region')">Region</button>
+        <button class="tab" onclick="switchCat('season')">Season</button>
+      </div>
+      <canvas id="catChart" height="200"></canvas>
+    </div>
+  </div>
+
+  <!-- ROW 3: Feature Selection Comparison + Radar -->
+  <div class="section-title" style="margin-top:16px;">
+    <div class="dot"></div>
+    <h2>Seleksi Fitur</h2>
+    <div class="line"></div>
+  </div>
+
+  <div class="main-grid" style="margin-bottom:16px;">
+    <!-- RFE vs SFS -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-blue">⚗️</div>
+        RFE vs SFS Forward — Perbandingan Metode
+      </div>
+      <canvas id="featureSelChart" height="220"></canvas>
+    </div>
+
+    <!-- R2 & CV Comparison -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-yellow">📐</div>
+        R² Score & CV R² — Seleksi Fitur
+      </div>
+      <canvas id="r2Chart" height="220"></canvas>
+      <div style="margin-top:16px;padding:10px 12px;background:rgba(88,166,255,0.06);border-radius:8px;border:1px solid rgba(88,166,255,0.15);">
+        <p style="font-size:12px;color:var(--text2);line-height:1.6;">
+          <span style="color:var(--blue);font-family:'Space Mono',monospace;font-size:11px;">RFE (10 fitur)</span> dan <span style="color:var(--orange);font-family:'Space Mono',monospace;font-size:11px;">SFS (10 fitur)</span> menghasilkan performa sebanding dengan <span style="color:var(--text)">semua 34 fitur</span>, mengindikasikan adanya redundansi fitur yang tinggi.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROW 4: Yield Trend + Data Split Info -->
+  <div class="main-grid three" style="margin-bottom:16px;">
+
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-green">📅</div>
+        Tren Yield per Tahun (Sampel)
+      </div>
+      <canvas id="trendChart" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-blue">🍕</div>
+        Distribusi Tipe Tanaman
+      </div>
+      <canvas id="cropPie" height="200"></canvas>
+    </div>
+
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-orange">🗂️</div>
+        Konfigurasi Preprocessing
+      </div>
+      <div style="display:flex;flex-direction:column;gap:12px;margin-top:4px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;">
+          <span style="font-size:12px;color:var(--text2)">Train / Test Split</span>
+          <span style="font-family:'Space Mono',monospace;font-size:13px;color:var(--green)">80% / 20%</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;">
+          <span style="font-size:12px;color:var(--text2)">Normalisasi</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--blue)">StandardScaler</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;">
+          <span style="font-size:12px;color:var(--text2)">Cross-Validation</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--yellow)">5-Fold CV</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;">
+          <span style="font-size:12px;color:var(--text2)">Seleksi Fitur</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--purple)">RFE + SFS</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;">
+          <span style="font-size:12px;color:var(--text2)">Fitur Terpilih</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--orange)">10 dari 34</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;padding:10px;background:var(--bg3);border-radius:8px;">
+          <span style="font-size:12px;color:var(--text2)">Missing Values</span>
+          <span style="font-family:'Space Mono',monospace;font-size:12px;color:var(--green)">0 (bersih)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SECTION: KOLOM KATEGORICAL YANG TIDAK DIPAKAI -->
+  <div class="section-title" style="margin-top:16px;">
+    <div class="dot" style="background:var(--orange)"></div>
+    <h2>Kolom Kategorical — Tidak Diikutkan Model</h2>
+    <div class="line"></div>
+  </div>
+
+  <!-- Alert box -->
+  <div style="margin-bottom:20px;padding:16px 20px;background:rgba(247,129,102,0.08);border:1px solid rgba(247,129,102,0.3);border-radius:12px;display:flex;gap:14px;align-items:flex-start;">
+    <div style="font-size:20px;flex-shrink:0;">⚠️</div>
+    <div>
+      <p style="font-family:'Space Mono',monospace;font-size:12px;color:var(--orange);letter-spacing:1px;margin-bottom:6px;">
+        TEMUAN PENTING
+      </p>
+      
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">
+        Dari <strong style="color:var(--text)">46 kolom</strong> pada dataset, proses pemodelan menggunakan 
+        <strong style="color:var(--green)">36 fitur numerik + 1 target (Yield)</strong>. 
+        Beberapa fitur kategorikal seperti 
+        <code style="background:var(--bg3);padding:2px 5px;border-radius:3px;font-size:11px;">Crop_Type</code>,
+        <code style="background:var(--bg3);padding:2px 5px;border-radius:3px;font-size:11px;">Soil_Type</code>,
+        <code style="background:var(--bg3);padding:2px 5px;border-radius:3px;font-size:11px;">Season</code>,
+        dan <code style="background:var(--bg3);padding:2px 5px;border-radius:3px;font-size:11px;">Region</code>
+        belum dimasukkan secara penuh ke dalam proses pemodelan regresi. 
+        
+        Hal ini dapat memengaruhi kemampuan model dalam menangkap hubungan kompleks antar fitur terhadap nilai Yield, sehingga performa prediksi masih menunjukkan nilai R² yang rendah.
+      </p>
+    </div>
+  </div>
+
+  <!-- Kolom Kategorical: Status Table + Yield comparison -->
+  <div class="main-grid" style="margin-bottom:16px;">
+
+    <!-- Status kolom -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-orange">📋</div>
+        Status 9 Kolom Kategorical
+      </div>
+      <table class="model-table">
+        <thead>
+          <tr>
+            <th>Kolom</th>
+            <th>Unique</th>
+            <th>Status</th>
+            <th>Rekomendasi</th>
+          </tr>
+        </thead>
+        <tbody id="catTable"></tbody>
+      </table>
+    </div>
+
+    <!-- Dampak encode vs tidak -->
+    <div class="card">
+      <div class="card-title">
+        <div class="icon icon-yellow">🔬</div>
+        Dampak Encode Kategorical terhadap Model
+      </div>
+      <canvas id="encodeCompareChart" height="230"></canvas>
+      <div style="margin-top:14px;padding:10px 14px;background:rgba(63,185,80,0.07);border:1px solid rgba(63,185,80,0.2);border-radius:8px;">
+        <p style="font-size:12px;color:var(--text2);line-height:1.6;">
+          <span style="color:var(--green);font-family:'Space Mono',monospace;font-size:11px;">INSIGHT:</span>
+          Penambahan encode kategorical memberikan perubahan R² yang sangat kecil. Ini mengindikasikan bahwa 
+          <strong style="color:var(--text)">hubungan antar fitur dan target cenderung lemah dan kompleks</strong>, 
+          sehingga model regresi linier belum mampu menangkap pola prediksi Yield secara optimal.
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Yield by each categorical -->
+  <div class="main-grid three" style="margin-bottom:16px;">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-green">🌾</div>Avg Yield by Crop Type</div>
+      <canvas id="yieldCropBar" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon icon-blue">🌍</div>Avg Yield by Soil Type</div>
+      <canvas id="yieldSoilBar" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon icon-purple">🌱</div>Avg Yield by Growth Stage</div>
+      <canvas id="yieldGrowthBar" height="180"></canvas>
+    </div>
+  </div>
+
+  <div class="main-grid three" style="margin-bottom:16px;">
+    <div class="card">
+      <div class="card-title"><div class="icon icon-yellow">🧪</div>Avg Yield by Fertilizer Type</div>
+      <canvas id="yieldFertBar" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon icon-orange">🛡️</div>Avg Yield by Pesticide Usage</div>
+      <canvas id="yieldPestBar" height="180"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-title"><div class="icon icon-blue">📅</div>Avg Yield by Season</div>
+      <canvas id="yieldSeasonBar" height="180"></canvas>
+    </div>
+  </div>
+
+  <!-- Std Dev insight -->
+  <div class="card" style="margin-bottom:16px;">
+    <div class="card-title"><div class="icon icon-orange">📊</div>Mengapa Kategorical Tidak Berdampak Signifikan? — Analisis Std Deviasi Yield</div>
+    <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:16px;">
+      <div id="stdCards"></div>
+    </div>
+    <canvas id="stdChart" height="120"></canvas>
+    <div style="margin-top:14px;padding:12px 16px;background:rgba(88,166,255,0.07);border:1px solid rgba(88,166,255,0.2);border-radius:8px;">
+      <p style="font-size:13px;color:var(--text2);line-height:1.7;">
+        Setiap kategori memiliki <strong style="color:var(--text)">std deviasi Yield ≈ 2.6 – 2.7</strong> — hampir sama dengan std keseluruhan dataset (2.63). 
+        Artinya distribusi Yield di dalam setiap kategori sama-sama acak, sehingga label kategori 
+        <strong style="color:var(--orange)">tidak memberikan sinyal prediktif yang bermakna</strong>. 
+        Untuk meningkatkan R², diperlukan <strong style="color:var(--green)">feature engineering lebih lanjut</strong> 
+        atau penggunaan model yang dapat menangkap interaksi antar-fitur (XGBoost, Neural Network).
+      </p>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <p>Data Mining · Tugas Besar 2 · Agri Yield Prediction</p>
+    <p>Dataset: 10,000 records · 46 features · 2000–2024</p>
+    <p>Models: Linear Reg · Random Forest · Lasso</p>
+  </footer>
+
+</div>
+
+<script>
+Chart.defaults.color = '#8b949e';
+Chart.defaults.borderColor = '#30363d';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+
+const COLORS = {
+  blue: '#58a6ff',
+  green: '#3fb950',
+  orange: '#f78166',
+  yellow: '#e3b341',
+  purple: '#bc8cff',
+  bg2: '#161b22',
+  bg3: '#21262d',
+  border: '#30363d',
+};
+
+// ── Categorical columns status table ────────────────────────────────
+const catCols = [
+  { name: 'Crop_Type',       unique: 4,     status: 'Di-drop', rec: 'Label Encoding', impact: 'high' },
+  { name: 'Soil_Type',       unique: 4,     status: 'Di-drop', rec: 'Label Encoding', impact: 'high' },
+  { name: 'Growth_Stage',    unique: 3,     status: 'Di-drop', rec: 'Label Encoding', impact: 'high' },
+  { name: 'Fertilizer_Type', unique: 3,     status: 'Di-drop', rec: 'Label Encoding', impact: 'high' },
+  { name: 'Pesticide_Usage', unique: 3,     status: 'Di-drop', rec: 'Hubungan tidak konsisten', impact: 'medium' },
+  { name: 'Region',          unique: 4,     status: 'Di-drop', rec: 'Label Encoding', impact: 'medium' },
+  { name: 'Season',          unique: 3,     status: 'Di-drop', rec: 'Label Encoding', impact: 'medium' },
+  { name: 'Aspect', unique: 8, status: 'Di-drop', rec: 'Topografi minor', impact: 'low'},
+  { name: 'Planting_Date',   unique: 10000, status: 'Di-drop', rec: 'Ekstrak bulan/DOY', impact: 'low' },
+  { name: 'Harvest_Date',    unique: 10000, status: 'Di-drop', rec: 'Ekstrak bulan/DOY', impact: 'low' },
+];
+const tb = document.getElementById('catTable');
+catCols.forEach(c => {
+  const impColor = c.impact === 'high' ? 'var(--orange)' : c.impact === 'medium' ? 'var(--yellow)' : 'var(--text3)';
+  tb.innerHTML += `
+    <tr>
+      <td style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text)">${c.name}</td>
+      <td style="font-family:'Space Mono',monospace;font-size:11px;color:var(--text2)">${c.unique}</td>
+      <td><span style="font-size:10px;padding:2px 7px;border-radius:3px;background:rgba(247,129,102,0.15);color:var(--orange);font-family:'Space Mono',monospace;">✘ ${c.status}</span></td>
+      <td><span style="font-size:11px;color:${impColor}">${c.rec}</span></td>
+    </tr>`;
+});
+
+// ── Encode compare chart ─────────────────────────────────────────────
+new Chart(document.getElementById('encodeCompareChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Linear Reg', 'Random Forest', 'Lasso'],
+    datasets: [
+      {
+        label: 'Numerik Only (36 fitur)',
+        data: [-0.0093, -0.0115, -0.0069],
+        backgroundColor: COLORS.blue + 'bb',
+        borderColor: COLORS.blue,
+        borderWidth: 1.5,
+        borderRadius: 5,
+      },
+      {
+        label: '+ Encode Kategorical (43 fitur)',
+        data: [-0.0094, -0.0111, -0.0067],
+        backgroundColor: COLORS.orange + 'bb',
+        borderColor: COLORS.orange,
+        borderWidth: 1.5,
+        borderRadius: 5,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, padding: 12, font: { size: 11 } } },
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+    },
+    scales: {
+      x: { grid: { color: '#21262d' }, ticks: { font: { size: 10 } } },
+      y: {
+        grid: { color: '#21262d' },
+        ticks: { font: { family: "'Space Mono', monospace", size: 10 } },
+        title: { display: true, text: 'R² Score', color: 'var(--text3)', font: { size: 10 } }
+      }
+    }
+  }
+});
+
+// ── Helper: small category bar chart ─────────────────────────────────
+function makeCatBar(id, labels, data, color, yMin, yMax) {
+  new Chart(document.getElementById(id), {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        data,
+        backgroundColor: color + 'bb',
+        borderColor: color,
+        borderWidth: 1.5,
+        borderRadius: 5,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: { legend: { display: false }, tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 } },
+      scales: {
+        x: { grid: { color: '#21262d' }, ticks: { font: { size: 9 } } },
+        y: {
+          grid: { color: '#21262d' },
+          min: yMin, max: yMax,
+          ticks: { font: { family: "'Space Mono', monospace", size: 9 } }
+        }
+      }
+    }
+  });
+}
+
+makeCatBar('yieldCropBar',   ['Maize','Rice','Soybean','Wheat'],             [5.414,5.497,5.465,5.506], COLORS.green,  5.3, 5.6);
+makeCatBar('yieldSoilBar',   ['Clayey','Loamy','Sandy','Silty'],             [5.452,5.439,5.464,5.525], COLORS.blue,   5.3, 5.6);
+makeCatBar('yieldGrowthBar', ['Maturity','Reproductive','Vegetative'],       [5.412,5.459,5.539],       COLORS.purple, 5.3, 5.6);
+makeCatBar('yieldFertBar',   ['Chemical','Mixed','Organic'],                 [5.438,5.447,5.525],       COLORS.yellow, 5.3, 5.6);
+makeCatBar('yieldPestBar',   ['High','Low','Medium'],                        [5.479,5.444,5.488],       COLORS.orange, 5.3, 5.6);
+makeCatBar('yieldSeasonBar', ['Kharif','Rabi','Zaid'],                       [5.484,5.480,5.444],       COLORS.blue,   5.3, 5.6);
+
+// ── Std deviation chart ───────────────────────────────────────────────
+const stdLabels = ['Maize','Wheat','Rice','Soybean','Kharif','Rabi','Zaid','Silty','Sandy','Clayey','Overall'];
+const stdVals   = [2.652, 2.645, 2.600, 2.635, 2.646, 2.623, 2.632, 2.612, 2.656, 2.646, 2.633];
+const stdColors = stdLabels.map((l,i) => i === stdLabels.length-1 ? COLORS.orange + 'ee' : COLORS.blue + '99');
+
+new Chart(document.getElementById('stdChart'), {
+  type: 'bar',
+  data: {
+    labels: stdLabels,
+    datasets: [{
+      label: 'Std Deviasi Yield',
+      data: stdVals,
+      backgroundColor: stdColors,
+      borderColor: stdLabels.map((l,i) => i === stdLabels.length-1 ? COLORS.orange : COLORS.blue),
+      borderWidth: 1.5,
+      borderRadius: 4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+    },
+    scales: {
+      x: { grid: { color: '#21262d' }, ticks: { font: { size: 9 } } },
+      y: {
+        grid: { color: '#21262d' },
+        min: 2.55, max: 2.7,
+        ticks: { font: { family: "'Space Mono', monospace", size: 9 } }
+      }
+    }
+  }
+});
+
+new Chart(document.getElementById('errorChart'), {
+  type: 'bar',
+  data: {
+    labels: ['Linear Regression', 'Random Forest', 'Lasso Regression'],
+    datasets: [
+      {
+        label: 'MAE',
+        data: [2.282, 2.281, 2.278],
+        backgroundColor: COLORS.blue + 'cc',
+        borderColor: COLORS.blue,
+        borderWidth: 1,
+        borderRadius: 5,
+      },
+      {
+        label: 'RMSE',
+        data: [2.635, 2.639, 2.631],
+        backgroundColor: COLORS.orange + 'cc',
+        borderColor: COLORS.orange,
+        borderWidth: 1,
+        borderRadius: 5,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 12, padding: 16 } },
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+    },
+    scales: {
+      x: { grid: { color: '#21262d' }, ticks: { font: { size: 10 } } },
+      y: {
+        grid: { color: '#21262d' },
+        min: 2.25,
+        max: 2.7,
+        ticks: { font: { family: "'Space Mono', monospace", size: 10 } }
+      }
+    }
+  }
+});
+
+// ── Feature Importance ──────────────────────────────────────────────────
+const features = [
+  { name: 'Cu', val: 0.0310 },
+  { name: 'Mg', val: 0.0300 },
+  { name: 'NDVI', val: 0.0290 },
+  { name: 'Mo', val: 0.0280 },
+  { name: 'Elevation', val: 0.0270 },
+  { name: 'Bulk_Density', val: 0.0260 },
+  { name: 'Clay', val: 0.0260 },
+  { name: 'Chlorophyll', val: 0.0250 },
+  { name: 'Fe', val: 0.0250 },
+  { name: 'K', val: 0.0240 },
+];
+
+const gradColors = [
+  COLORS.green, COLORS.blue, COLORS.purple, COLORS.yellow, COLORS.orange,
+  COLORS.green, COLORS.blue, COLORS.purple, COLORS.yellow, COLORS.orange
+];
+
+const max = features[0].val;
+const featList = document.getElementById('featList');
+features.forEach((f, i) => {
+  const pct = (f.val / max * 100).toFixed(1);
+  featList.innerHTML += `
+    <div class="feat-item">
+      <span class="feat-name">${f.name}</span>
+      <div class="feat-bar-bg">
+        <div class="feat-bar-fill" style="width:0%;background:${gradColors[i]}" data-w="${pct}%"></div>
+      </div>
+      <span class="feat-val">${(f.val*100).toFixed(2)}%</span>
+    </div>
+  `;
+});
+
+// Animate bars
+setTimeout(() => {
+  document.querySelectorAll('.feat-bar-fill').forEach(el => {
+    el.style.width = el.dataset.w;
+  });
+}, 200);
+
+// ── Category Chart ──────────────────────────────────────────────────────
+const catData = {
+  crop: {
+    labels: ['Wheat', 'Rice', 'Soybean', 'Maize'],
+    data: [5.506, 5.497, 5.465, 5.414],
+    color: COLORS.green
+  },
+  region: {
+    labels: ['East', 'South', 'West', 'North'],
+    data: [5.505, 5.496, 5.454, 5.426],
+    color: COLORS.blue
+  },
+  season: {
+    labels: ['Kharif', 'Rabi', 'Zaid'],
+    data: [5.484, 5.480, 5.444],
+    color: COLORS.yellow
+  }
+};
+
+let catChart = null;
+function drawCatChart(key) {
+  const d = catData[key];
+  if (catChart) catChart.destroy();
+  catChart = new Chart(document.getElementById('catChart'), {
+    type: 'bar',
+    data: {
+      labels: d.labels,
+      datasets: [{
+        label: 'Avg Yield (ton/ha)',
+        data: d.data,
+        backgroundColor: d.color + '99',
+        borderColor: d.color,
+        borderWidth: 2,
+        borderRadius: 6,
+      }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { display: false },
+        tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+      },
+      scales: {
+        x: { grid: { color: '#21262d' } },
+        y: {
+          grid: { color: '#21262d' },
+          min: 5.3, max: 5.6,
+          ticks: { font: { family: "'Space Mono', monospace", size: 10 } }
+        }
+      }
+    }
+  });
+}
+
+window.switchCat = function(key) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  event.target.classList.add('active');
+  drawCatChart(key);
+};
+drawCatChart('crop');
+
+// ── Feature Selection RFE vs SFS ──────────────────────────────────────
+const rfeFeats = [
+  'B',
+  'LAI',
+  'pH',
+  'EC',
+  'OC',
+  'EVI',
+  'NDVI',
+  'Bulk_Density',
+  'Mo',
+  'Cu'
+];
+const sfsFeats = [
+  'K',
+  'S',
+  'Fe',
+  'Cu',
+  'Mo',
+  'Clay',
+  'Bulk_Density',
+  'Elevation',
+  'NDVI',
+  'Chlorophyll'
+];
+const allFeats = [...new Set([...rfeFeats, ...sfsFeats])].sort();
+const rfeVals = allFeats.map(f => rfeFeats.includes(f) ? 1 : 0);
+const sfsVals = allFeats.map(f => sfsFeats.includes(f) ? 1 : 0);
+
+new Chart(document.getElementById('featureSelChart'), {
+  type: 'bar',
+  data: {
+    labels: allFeats,
+    datasets: [
+      {
+        label: 'RFE',
+        data: rfeVals.map((v,i) => v === 1 ? i + 1 : null),
+        backgroundColor: COLORS.blue + 'cc',
+        borderRadius: 3,
+      },
+      {
+        label: 'SFS Forward',
+        data: sfsVals.map((v,i) => v === 1 ? i + 1 : null),
+        backgroundColor: COLORS.orange + 'cc',
+        borderRadius: 3,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    indexAxis: 'y',
+    plugins: {
+      legend: { position: 'top', labels: { boxWidth: 10, padding: 14 } },
+      tooltip: {
+        callbacks: {
+          label: (ctx) => ctx.dataset.label + ': Terpilih'
+        }
+      }
+    },
+    scales: {
+      x: { display: false },
+      y: { grid: { color: '#21262d' }, ticks: { font: { size: 9, family: "'Space Mono'" } } }
+    }
+  }
+});
+
+// ── R2 Comparison ─────────────────────────────────────────────────────
+new Chart(document.getElementById('r2Chart'), {
+  type: 'bar',
+  data: {
+    labels: ['Semua Fitur (34)', 'RFE (10)', 'SFS (10)'],
+    datasets: [
+      {
+        label: 'R² Score',
+        data: [-0.0094, -0.009, -0.009],
+        backgroundColor: [COLORS.blue+'99', COLORS.blue+'dd', COLORS.orange+'dd'],
+        borderColor: [COLORS.blue, COLORS.blue, COLORS.orange],
+        borderWidth: 1.5,
+        borderRadius: 5,
+      }
+    ]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      annotation: {},
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+    },
+    scales: {
+      x: { grid: { color: '#21262d' } },
+      y: {
+        grid: { color: '#21262d' },
+        ticks: { font: { family: "'Space Mono', monospace", size: 10 } }
+      }
+    }
+  }
+});
+
+// ── Trend Chart ───────────────────────────────────────────────────────
+const years = [
+  2000,2001,2002,2003,2004,
+  2005,2006,2007,2008,2009,
+  2010,2011,2012,2013,2014,
+  2015,2016,2017,2018,2019,
+  2020,2021,2022,2023,2024
+];
+
+const avgYields = [
+  5.41,5.44,5.46,5.43,5.48,
+  5.50,5.45,5.47,5.49,5.46,
+  5.44,5.48,5.45,5.47,5.46,
+  5.49,5.45,5.48,5.47,5.44,
+  5.46,5.48,5.45,5.47,5.46
+];
+
+new Chart(document.getElementById('trendChart'), {
+  type: 'line',
+  data: {
+    labels: years,
+    datasets: [{
+      label: 'Avg Yield',
+      data: avgYields,
+      borderColor: COLORS.green,
+      backgroundColor: COLORS.green + '22',
+      borderWidth: 2,
+      pointRadius: 2,
+      pointBackgroundColor: COLORS.green,
+      fill: true,
+      tension: 0.4,
+    }]
+  },
+  options: {
+    responsive: true,
+    plugins: {
+      legend: { display: false },
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+    },
+    scales: {
+      x: { grid: { color: '#21262d' }, ticks: { font: { size: 9 }, maxTicksLimit: 8 } },
+      y: {
+        grid: { color: '#21262d' },
+        ticks: { font: { family: "'Space Mono', monospace", size: 10 } }
+      }
+    }
+  }
+});
+
+// ── Crop Pie ──────────────────────────────────────────────────────────
+new Chart(document.getElementById('cropPie'), {
+  type: 'doughnut',
+  data: {
+    labels: ['Maize', 'Wheat', 'Soybean', 'Rice'],
+    datasets: [{
+      data: [2554, 2531, 2510, 2405],
+      backgroundColor: [COLORS.yellow+'cc', COLORS.blue+'cc', COLORS.green+'cc', COLORS.orange+'cc'],
+      borderColor: COLORS.bg2,
+      borderWidth: 3,
+      hoverOffset: 6,
+    }]
+  },
+  options: {
+    responsive: true,
+    cutout: '65%',
+    plugins: {
+      legend: {
+        position: 'bottom',
+        labels: { boxWidth: 10, padding: 12, font: { size: 11 } }
+      },
+      tooltip: { backgroundColor: '#161b22', borderColor: '#30363d', borderWidth: 1 }
+    }
+  }
+});
+</script>
+</body>
+</html>
